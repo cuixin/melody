@@ -409,7 +409,7 @@ func TestPingPong(t *testing.T) {
 	done := make(chan bool)
 
 	ws := NewTestServer()
-	ws.m.Config.PingPeriod = time.Millisecond
+	ws.m.Options.pingPeriod = time.Millisecond
 
 	ws.m.HandlePong(func(s *Session) {
 		close(done)
@@ -430,7 +430,7 @@ func TestHandleClose(t *testing.T) {
 	done := make(chan bool)
 
 	ws := NewTestServer()
-	ws.m.Config.PingPeriod = time.Millisecond
+	ws.m.Options.pingPeriod = time.Millisecond
 
 	ws.m.HandleClose(func(s *Session, code int, text string) error {
 		close(done)
@@ -472,7 +472,7 @@ func TestHandleErrorWrite(t *testing.T) {
 	done := make(chan bool)
 
 	ws := NewTestServer()
-	ws.m.Config.WriteWait = 0
+	ws.m.Options.writeWait = 0
 
 	ws.m.HandleConnect(func(s *Session) {
 		err := s.Write(TestMsg)
@@ -577,7 +577,7 @@ func TestErrMessageBufferFull(t *testing.T) {
 		session.Write(msg)
 		session.Write(msg)
 	})
-	ws.m.Config.MessageBufferSize = 0
+	ws.m.Options.messageBufferSize = 0
 	ws.m.HandleError(func(s *Session, err error) {
 		if errors.Is(err, ErrMessageBufferFull) {
 			close(done)

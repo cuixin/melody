@@ -46,15 +46,17 @@ var validReceivedCloseCodes = map[int]bool{
 	CloseTLSHandshake:            false,
 }
 
-type handleMessageFunc func(*Session, []byte)
-type handleErrorFunc func(*Session, error)
-type handleCloseFunc func(*Session, int, string) error
-type handleSessionFunc func(*Session)
-type filterFunc func(*Session) bool
+type (
+	handleMessageFunc func(*Session, []byte)
+	handleErrorFunc   func(*Session, error)
+	handleCloseFunc   func(*Session, int, string) error
+	handleSessionFunc func(*Session)
+	filterFunc        func(*Session) bool
+)
 
 // Melody implements a websocket manager.
 type Melody struct {
-	Config                   *Config
+	Options                  *Options
 	Upgrader                 *websocket.Upgrader
 	messageHandler           handleMessageFunc
 	messageHandlerBinary     handleMessageFunc
@@ -69,10 +71,11 @@ type Melody struct {
 }
 
 // New creates a new melody instance with default Upgrader and Config.
-func New() *Melody {
+func New(options ...func(*Options)) *Melody {
+	opts := newOptinos(options...)
 	upgrader := &websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  opts.readBufferSize,
+		WriteBufferSize: opts.writeBufferSize,
 		CheckOrigin:     func(r *http.Request) bool { return true },
 	}
 
@@ -81,7 +84,7 @@ func New() *Melody {
 	go hub.run()
 
 	return &Melody{
-		Config:                   newConfig(),
+		Options:                  opts,
 		Upgrader:                 upgrader,
 		messageHandler:           func(*Session, []byte) {},
 		messageHandlerBinary:     func(*Session, []byte) {},
@@ -167,7 +170,6 @@ func (m *Melody) HandleRequestWithKeys(w http.ResponseWriter, r *http.Request, k
 	}
 
 	conn, err := m.Upgrader.Upgrade(w, r, w.Header())
-
 	if err != nil {
 		return err
 	}
@@ -176,7 +178,7 @@ func (m *Melody) HandleRequestWithKeys(w http.ResponseWriter, r *http.Request, k
 		Request:    r,
 		Keys:       keys,
 		conn:       conn,
-		output:     make(chan *envelope, m.Config.MessageBufferSize),
+		output:     make(chan *envelope, m.Options.messageBufferSize),
 		outputDone: make(chan struct{}),
 		melody:     m,
 		open:       true,
@@ -313,6 +315,17 @@ func (m *Melody) Len() int {
 // IsClosed returns the status of the melody instance.
 func (m *Melody) IsClosed() bool {
 	return m.hub.closed()
+}
+
+// Kick kicks the session by session instance.
+// Return the error if the hub is closed
+func (m *Melody) Kick(session *Session) error {
+	if m.hub.closed() {
+		return ErrClosed
+	}
+
+	m.hub.kick <- session
+	return nil
 }
 
 // FormatCloseMessage formats closeCode and text as a WebSocket close message.

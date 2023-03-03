@@ -9,6 +9,7 @@ type hub struct {
 	broadcast  chan *envelope
 	register   chan *Session
 	unregister chan *Session
+	kick       chan *Session
 	exit       chan *envelope
 	open       bool
 	rwmutex    *sync.RWMutex
@@ -20,6 +21,7 @@ func newHub() *hub {
 		broadcast:  make(chan *envelope),
 		register:   make(chan *Session),
 		unregister: make(chan *Session),
+		kick:       make(chan *Session),
 		exit:       make(chan *envelope),
 		open:       true,
 		rwmutex:    &sync.RWMutex{},
@@ -36,6 +38,13 @@ loop:
 			h.rwmutex.Unlock()
 		case s := <-h.unregister:
 			if _, ok := h.sessions[s]; ok {
+				h.rwmutex.Lock()
+				delete(h.sessions, s)
+				h.rwmutex.Unlock()
+			}
+		case s := <-h.kick:
+			if _, ok := h.sessions[s]; ok {
+				s.close()
 				h.rwmutex.Lock()
 				delete(h.sessions, s)
 				h.rwmutex.Unlock()

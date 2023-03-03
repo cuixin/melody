@@ -39,9 +39,8 @@ func (s *Session) writeRaw(message *envelope) error {
 		return ErrWriteClosed
 	}
 
-	s.conn.SetWriteDeadline(time.Now().Add(s.melody.Config.WriteWait))
+	s.conn.SetWriteDeadline(time.Now().Add(s.melody.Options.writeWait))
 	err := s.conn.WriteMessage(message.t, message.msg)
-
 	if err != nil {
 		return err
 	}
@@ -72,7 +71,7 @@ func (s *Session) ping() {
 }
 
 func (s *Session) writePump() {
-	ticker := time.NewTicker(s.melody.Config.PingPeriod)
+	ticker := time.NewTicker(s.melody.Options.pingPeriod)
 	defer ticker.Stop()
 
 loop:
@@ -80,7 +79,6 @@ loop:
 		select {
 		case msg := <-s.output:
 			err := s.writeRaw(msg)
-
 			if err != nil {
 				s.melody.errorHandler(s, err)
 				break loop
@@ -108,11 +106,11 @@ loop:
 }
 
 func (s *Session) readPump() {
-	s.conn.SetReadLimit(s.melody.Config.MaxMessageSize)
-	s.conn.SetReadDeadline(time.Now().Add(s.melody.Config.PongWait))
+	s.conn.SetReadLimit(s.melody.Options.maxMessageSize)
+	s.conn.SetReadDeadline(time.Now().Add(s.melody.Options.pongWait))
 
 	s.conn.SetPongHandler(func(string) error {
-		s.conn.SetReadDeadline(time.Now().Add(s.melody.Config.PongWait))
+		s.conn.SetReadDeadline(time.Now().Add(s.melody.Options.pongWait))
 		s.melody.pongHandler(s)
 		return nil
 	})
@@ -125,7 +123,6 @@ func (s *Session) readPump() {
 
 	for {
 		t, message, err := s.conn.ReadMessage()
-
 		if err != nil {
 			s.melody.errorHandler(s, err)
 			break

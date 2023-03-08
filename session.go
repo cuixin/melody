@@ -103,6 +103,8 @@ loop:
 			}
 		}
 	}
+
+	s.close()
 }
 
 func (s *Session) readPump() {

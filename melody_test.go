@@ -660,6 +660,7 @@ func TestSessionKeysConcurrent(t *testing.T) {
 
 		go func() {
 			s.Set("test", TestMsg)
+
 			v1, exists := s.Get("test")
 
 			assert.True(t, exists)
@@ -668,6 +669,22 @@ func TestSessionKeysConcurrent(t *testing.T) {
 			v2 := s.MustGet("test")
 
 			assert.Equal(t, v1, v2)
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+
+		go func() {
+			s.UnSet("test")
+
+			_, exists := s.Get("test")
+
+			assert.False(t, exists)
 
 			wg.Done()
 		}()

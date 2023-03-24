@@ -1,8 +1,8 @@
-module github.com/olahol/melody/examples
+module github.com/cuixin/melody/examples
 
 go 1.19
 
-replace github.com/olahol/melody => ../
+replace github.com/cuixin/melody => ../
 
 require (
 	github.com/fsnotify/fsnotify v1.5.4

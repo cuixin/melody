@@ -12,7 +12,7 @@ type hub struct {
 	kick       chan *Session
 	exit       chan *envelope
 	open       bool
-	rwmutex    *sync.RWMutex
+	rwmutex    sync.RWMutex
 }
 
 func newHub() *hub {
@@ -24,7 +24,6 @@ func newHub() *hub {
 		kick:       make(chan *Session),
 		exit:       make(chan *envelope),
 		open:       true,
-		rwmutex:    &sync.RWMutex{},
 	}
 }
 

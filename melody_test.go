@@ -596,9 +596,9 @@ func TestErrMessageBufferFull(t *testing.T) {
 
 func TestSessionKeys(t *testing.T) {
 	ws := NewTestServer()
-
+	sendStamp := time.Now().UnixNano()
 	ws.m.HandleConnect(func(session *Session) {
-		session.Set("stamp", time.Now().UnixNano())
+		session.Set("stamp", sendStamp)
 	})
 	ws.m.HandleMessage(func(session *Session, msg []byte) {
 		stamp := session.MustGet("stamp").(int64)
@@ -617,13 +617,12 @@ func TestSessionKeys(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		stamp, err := strconv.Atoi(string(ret))
-
+		recvStamp, err := strconv.ParseInt(string(ret), 10, 64)
 		assert.Nil(t, err)
 
-		diff := int(time.Now().UnixNano()) - stamp
+		diff := int64(time.Now().UnixNano()) - recvStamp
 
-		assert.Greater(t, diff, 0)
+		assert.Greater(t, diff, int64(0))
 
 		return true
 	}
